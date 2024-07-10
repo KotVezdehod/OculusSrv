@@ -63,7 +63,7 @@ void FileCleaner::clean()
 
     QString delStatement;
 
-    statement = "SELECT file "
+    statement = "SELECT file, id "
                 "FROM DataPool "
                 "WHERE file <> ''";
 
@@ -72,13 +72,13 @@ void FileCleaner::clean()
     for (QVector<QMap<QString,DataValue>>::ConstIterator cIt = vec1.cbegin(); cIt!=vec1.cend(); std::advance(cIt,1))
     {
 
-       delStatement = "DELETE FROM DataPool WHERE file = 'fn'";
+       delStatement = "DELETE FROM DataPool WHERE id = id1";
 
         QString filePath(cIt->value("file").strValue);
 
         if (!QFile::exists(filePath))
         {
-            delStatement.replace("fn",filePath);
+            delStatement.replace("id1",QString::number(cIt->value(DB_FIELDS::ID).intValue));
             sql.execStatement(delStatement);
             //Diagnostics(true, "FileCleaner::clean: удалена запись БД, указывающая на отсутствующий файл" + cIt->value("file").strValue).throwLocalDiag();
         }

@@ -3,6 +3,7 @@
 #include <QEventLoop>
 #include <QDebug>
 #include <QJsonDocument>
+#include <filesystem>
 #include "taskwatcher.h"
 #include "httpserver.h"
 #include "datetime.h"
@@ -15,6 +16,7 @@ extern QString *dataFolder;
 extern unsigned long long startTime;
 extern unsigned long long stopTime;
 
+namespace fs = std::filesystem;
 
 Searcher::Searcher(QObject *parent)
     : QObject{parent}
@@ -77,6 +79,21 @@ void Searcher::search()
     for (DataRowsSet::Iterator it = rows.begin();
          it != rows.end(); std::advance(it,1))
     {
+
+        QString fnLoc = it->value(DB_FIELDS::FILE).strValue;
+        if (!fs::exists(fnLoc.toStdString())){
+            qDebug() << "File " << fnLoc << " isn't exist. Removing row from database...";
+
+
+             if (!QFile::exists(it->value(DB_FIELDS::FILE).strValue))
+             {
+                 QString delStatement = "DELETE FROM DataPool WHERE id = ";
+                 delStatement += QString::number(it->value(DB_FIELDS::ID).intValue);
+
+                 sql.execStatement(delStatement);
+                 //Diagnostics(true, "FileCleaner::clean: удалена запись БД, указывающая на отсутствующий файл" + cIt->value("file").strValue).throwLocalDiag();
+             }
+        }
 
         QString idLoc = QString::number(it->value(DB_FIELDS::ID).intValue);
 

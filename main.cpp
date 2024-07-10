@@ -71,12 +71,12 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (startTime >= stopTime){
-        QString t = "Start can't be less then stoptime!";
-        qDebug()<< t;
-        Diagnostics(false,t).throwLocalDiag();
-        return -1;
-    }
+//    if (startTime >= stopTime){
+//        QString t = "Start can't be less then stoptime!";
+//        qDebug()<< t;
+//        Diagnostics(false,t).throwLocalDiag();
+//        return -1;
+//    }
 
 
     if (strDataFolder.empty()){
