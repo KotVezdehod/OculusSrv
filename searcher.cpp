@@ -15,6 +15,7 @@ extern std::mutex *gTasksListMutex;
 extern QString *dataFolder;
 extern unsigned long long startTime;
 extern unsigned long long stopTime;
+extern int threads;
 
 namespace fs = std::filesystem;
 
@@ -122,7 +123,8 @@ void Searcher::search()
                     it->value(DB_FIELDS::FILE).strValue.toStdString(),
                     dataFolder->toStdString(),
                     errDescr,
-                    errLevel);
+                    errLevel,
+                    threads);
 
         if (!errDescr.empty()){
             QJsonArray jArrOut;

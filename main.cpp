@@ -24,6 +24,7 @@ std::mutex *gFileWritingMutex = new std::mutex;
 FileCleaner *gFileCleaner = nullptr;
 unsigned long long startTime = DateTime().dateTimeToUlongLongTime(QDateTime::fromString("20000101000000","yyyyMMddHHmmss"));
 unsigned long long stopTime = DateTime().dateTimeToUlongLongTime(QDateTime::fromString("20000101080000","yyyyMMddHHmmss"));
+int threads = 4;
 
 std::ofstream ofLck;
 
@@ -68,6 +69,14 @@ int main(int argc, char *argv[])
                 return -1;
             }
             stopTime = stopTimeLoc;
+        }
+
+        if (!strcmp(argv[i], "-threads")) {
+            i++;
+            if (i >= argc)
+                break;
+
+            threads = QString(argv[i]).toInt();
         }
     }
 
