@@ -1,5 +1,7 @@
 //toDo:
-//х.Проверка на повторный запуск
+//х.Логи запросов
+//х. Логи удаления файлов + наложение лока на исполнение.
+
 
 #include <QCoreApplication>
 #include <iostream>
@@ -25,8 +27,8 @@ FileCleaner *gFileCleaner = nullptr;
 unsigned long long startTime = DateTime().dateTimeToUlongLongTime(QDateTime::fromString("20000101000000","yyyyMMddHHmmss"));
 unsigned long long stopTime = DateTime().dateTimeToUlongLongTime(QDateTime::fromString("20000101080000","yyyyMMddHHmmss"));
 int threads = 4;
-
 std::ofstream ofLck;
+std::mutex *mMutex = new std::mutex();
 
 int main(int argc, char *argv[])
 {

@@ -16,7 +16,7 @@ extern QString *dataFolder;
 extern unsigned long long startTime;
 extern unsigned long long stopTime;
 extern int threads;
-
+extern std::mutex *mMutex;
 namespace fs = std::filesystem;
 
 Searcher::Searcher(QObject *parent)
@@ -56,7 +56,7 @@ void Searcher::search()
         DateTime dtFromDB(it->value(DB_FIELDS::DATETIMESTAMP).intValue);
         unsigned long long difference = dtCurrent - dtFromDB;
 
-        if (difference > 691200000)     //8 дней
+        if (difference > 1000000)     //2 дней
         {
             sql.removeRowById(it->value(DB_FIELDS::ID).intValue);
 
@@ -73,9 +73,11 @@ void Searcher::search()
     DataRowsSet rows = sql.getRowsByStatement(&strStatement);
 
 
-    qDebug() << "Rows to recognizing: " << rows.length();
+
     if (!rows.count())
         return;
+
+    qDebug() << "Rows to recognizing: " << rows.length();
 
     for (DataRowsSet::Iterator it = rows.begin();
          it != rows.end(); std::advance(it,1))
@@ -86,67 +88,83 @@ void Searcher::search()
             qDebug() << "File " << fnLoc << " isn't exist. Removing row from database...";
 
 
-             if (!QFile::exists(it->value(DB_FIELDS::FILE).strValue))
-             {
+//             if (!QFile::exists(it->value(DB_FIELDS::FILE).strValue))
+//             {
                  QString delStatement = "DELETE FROM DataPool WHERE id = ";
                  delStatement += QString::number(it->value(DB_FIELDS::ID).intValue);
 
                  sql.execStatement(delStatement);
+                 continue;
                  //Diagnostics(true, "FileCleaner::clean: удалена запись БД, указывающая на отсутствующий файл" + cIt->value("file").strValue).throwLocalDiag();
-             }
+             //}
         }
 
         QString idLoc = QString::number(it->value(DB_FIELDS::ID).intValue);
 
-        QString strStatement("UPDATE " + sql.TABLE_NAME + " " +
+        QString strStatement_0("UPDATE " + sql.TABLE_NAME + " " +
                              "SET status = 2 "
                              "WHERE id = " + idLoc);
-        sql.execStatement(strStatement);
+        sql.execStatement(strStatement_0);
 
 //        qDebug() << it->value(DB_FIELDS::PATTERN).strValue;
 //        qDebug() << it->value(DB_FIELDS::FILE).strValue;
 //        qDebug() << *dataFolder;
 
-        QString t("Starting analysing row with id = " + idLoc);
-        t += "...";
-        Diagnostics(true,  t).throwLocalDiag();
-        qDebug() << t;
+        QString t0("Starting analysing row with id = " + idLoc);
+        t0 += "...";
+        Diagnostics(true,  t0).throwLocalDiag();
+        qDebug() << t0;
 
-        std::vector<std::string> errDescr;
-        std::vector<std::string> errLevel;
+//        std::vector<std::string> errDescr;
+//        std::vector<std::string> errLevel;
         bool result = false;
 
+        QString pat = it->value(DB_FIELDS::PATTERN).strValue;
+        QString file = it->value(DB_FIELDS::FILE).strValue;
+        std::string resultDescr;
 
         tryFindPattern(
-                    it->value(DB_FIELDS::PATTERN).strValue.toStdString(),
+                    pat.toStdString(),
                     result,
-                    it->value(DB_FIELDS::FILE).strValue.toStdString(),
+                    file.toStdString(),
                     dataFolder->toStdString(),
-                    errDescr,
-                    errLevel,
+                    resultDescr,
                     threads);
 
-        if (!errDescr.empty()){
-            QJsonArray jArrOut;
-            for (std::vector<std::string>::const_iterator it = errDescr.cbegin(); it != errDescr.cend(); std::advance(it,1)){
-                jArrOut.append(QJsonValue(QString::fromStdString(*it)));
-            }
-            QJsonDocument docOut(jArrOut);
-            QString t = docOut.toJson();
-            Diagnostics(false, t);
-            qDebug() << t;
-        } else {
-            QString strStatement("UPDATE " + sql.TABLE_NAME + " " +
+//        if (!errDescr.empty()){
+//            QJsonArray jArrOut;
+//            for (std::vector<std::string>::const_iterator it = errDescr.cbegin(); it != errDescr.cend(); std::advance(it,1)){
+//                jArrOut.append(QJsonValue(QString::fromStdString(*it)));
+//            }
+//            QJsonDocument docOut(jArrOut);
+//            QString t = docOut.toJson();
+//            Diagnostics(false, t);
+//            qDebug() << t;
+//        } else {
+            QString strStatement_1("UPDATE " + sql.TABLE_NAME + " " +
                                  "SET status = " + QString::number(result) + " "
                                  "WHERE id = " + idLoc);
-            sql.execStatement(strStatement);
+            sql.execStatement(strStatement_1);
 
-            QString t("Result analysing row with id = " + idLoc);
-            t += " is ";
-            t += QString::number(result);
-            Diagnostics(true,  t).throwLocalDiag();
-            qDebug() << t;
-        }
+            //qDebug() << QString::fromStdString(resultDescr);
+
+            fs::path logPath(dataFolder->toStdString());
+            logPath.append("log.txt");
+            std::ofstream ofs;
+            std::lock_guard<std::mutex> mute(*mMutex);
+
+            ofs.open(logPath,std::ios::app);
+            if (ofs.is_open()){
+                ofs << resultDescr << std::endl;
+                ofs.close();
+            }
+
+//            QString t1("Result analysing row with id = " + idLoc);
+//            t1 += " is ";
+//            t1 += QString::number(result);
+//            Diagnostics(true,  t1).throwLocalDiag();
+//            qDebug() << t1;
+        //}
 
     }
 

@@ -34,7 +34,7 @@ void TaskWatcher::watch()
 
     bool isSearcherAlive = it!=gTasks->end();
 
-    qDebug() << "======= Tasks remains: " << QString::number(gTasks->size());
+    //qDebug() << "======= Tasks remains: " << QString::number(gTasks->size());
 
     if (!isSearcherAlive && searcherWorking)
     {

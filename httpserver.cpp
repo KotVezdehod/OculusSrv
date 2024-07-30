@@ -159,6 +159,10 @@ void HttpServer::process()
             fs::path filePath(dataFolder->toStdString());
             filePath.append(fName.toStdString());
 
+            using LgType = std::unique_ptr<std::lock_guard<std::mutex>>;
+
+            LgType lock = std::make_unique<std::lock_guard<std::mutex>>(*gFileWritingMutex);
+
             std::ofstream ofs(filePath, std::ios::trunc);
 
             if (!ofs.is_open()){
@@ -187,6 +191,8 @@ void HttpServer::process()
             row.setValue(DB_FIELDS::PATTERN, patternToFind);
             row.setValue(DB_FIELDS::FILENAME, fileNameWOExt);
             Diagnostics diagRes = sql.insertRow(&row);
+
+            lock.reset();        //release lock
 
             if (!diagRes.status){
                 fs::remove(filePath);
