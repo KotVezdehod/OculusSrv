@@ -23,8 +23,11 @@ void FileCleaner::process()
 
 void FileCleaner::clean()
 {
+    Diagnostics(true, "FileCleaner::clean: enter proc").throwLocalDiag();
 
     std::lock_guard<std::mutex> mutexLoc(*gFileWritingMutex);
+
+    Diagnostics(true, "FileCleaner::clean: lock_guard set").throwLocalDiag();
 
     QDirIterator iter(*dataFolder, {"*.BinData"}, QDir::Files);
     Sqlite sql;
@@ -50,8 +53,6 @@ void FileCleaner::clean()
         }
         statement.replace("fname", fName);
 
-
-
         QVector<QMap<QString,DataValue>> vec = sql.getRowsByStatement(&statement);
 
         if (vec.size()==0)
@@ -61,6 +62,8 @@ void FileCleaner::clean()
         }
     }
 
+    Diagnostics(true, "FileCleaner::clean: files removed").throwLocalDiag();
+
     QString delStatement;
 
     statement = "SELECT file, id "
@@ -68,6 +71,8 @@ void FileCleaner::clean()
                 "WHERE file <> ''";
 
     QVector<QMap<QString,DataValue>> vec1 = sql.getRowsByStatement(&statement);
+
+    Diagnostics(true, "FileCleaner::clean: getRowsByStatement...").throwLocalDiag();
 
     for (QVector<QMap<QString,DataValue>>::ConstIterator cIt = vec1.cbegin(); cIt!=vec1.cend(); std::advance(cIt,1))
     {
@@ -83,6 +88,8 @@ void FileCleaner::clean()
             //Diagnostics(true, "FileCleaner::clean: удалена запись БД, указывающая на отсутствующий файл" + cIt->value("file").strValue).throwLocalDiag();
         }
     }
+
+    Diagnostics(true, "FileCleaner::clean: rows deleted").throwLocalDiag();
 
     return;
 }

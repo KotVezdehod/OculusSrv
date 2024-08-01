@@ -21,14 +21,13 @@ namespace fs = std::filesystem;
 QString *dataFolder = new QString();
 QVector<Task*> *gTasks = nullptr;
 TaskWatcher *gTaskWatcher = nullptr;
-std::mutex *gTasksListMutex = new std::mutex;
 std::mutex *gFileWritingMutex = new std::mutex;
 FileCleaner *gFileCleaner = nullptr;
 unsigned long long startTime = DateTime().dateTimeToUlongLongTime(QDateTime::fromString("20000101000000","yyyyMMddHHmmss"));
 unsigned long long stopTime = DateTime().dateTimeToUlongLongTime(QDateTime::fromString("20000101080000","yyyyMMddHHmmss"));
 int threads = 4;
 std::ofstream ofLck;
-std::mutex *mMutex = new std::mutex();
+//std::mutex *mMutex = new std::mutex();
 
 int main(int argc, char *argv[])
 {

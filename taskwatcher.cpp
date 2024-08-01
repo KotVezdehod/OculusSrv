@@ -8,7 +8,6 @@
 
 extern QVector<Task*> *gTasks;
 extern TaskWatcher* gTaskWatcher;
-extern std::mutex *gTasksListMutex;
 
 //======================== TaskWatcher
 TaskWatcher::TaskWatcher(QObject *parent)
@@ -50,8 +49,6 @@ void TaskWatcher::watch()
 
 void TaskWatcher::objectDestroyed(QObject *obj)
 {
-        std::lock_guard<std::mutex> mutexLoc(*gTasksListMutex);
-
         gTasks->erase(std::remove_if(gTasks->begin(), gTasks->end(), [obj](Task* t)
         {
             if (t->object == obj)
@@ -89,7 +86,6 @@ void TaskWatcher::fileCleanerStarted()
 
 void Task::start()
 {
-    std::lock_guard<std::mutex> mLoc(*gTasksListMutex);
     thread = new QThread();
     gTasks->push_back(this);
     object->moveToThread(thread);

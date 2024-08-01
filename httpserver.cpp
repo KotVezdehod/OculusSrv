@@ -120,6 +120,8 @@ void HttpServer::process()
         return QtConcurrent::run([&recv]()
         {
 
+            Diagnostics(true, "httpserver::route:NEW_FILE entering...").throwLocalDiag();
+
             if (recv.method() != QHttpServerRequest::Method::Post){
                 QString t("Method not allowed!");
                 Diagnostics(false, t).throwLocalDiag();
@@ -161,7 +163,11 @@ void HttpServer::process()
 
             using LgType = std::unique_ptr<std::lock_guard<std::mutex>>;
 
+            Diagnostics(true, "httpserver::route:NEW_FILE setting lock...").throwLocalDiag();
+
             LgType lock = std::make_unique<std::lock_guard<std::mutex>>(*gFileWritingMutex);
+
+            Diagnostics(true, "httpserver::route:NEW_FILE lock set").throwLocalDiag();
 
             std::ofstream ofs(filePath, std::ios::trunc);
 
@@ -179,10 +185,13 @@ void HttpServer::process()
                 return QHttpServerResponse(t, QHttpServerResponse::StatusCode::InternalServerError);
             };
 
+
             int sz = recv.body().size();
 
             ofs.write(recv.body(), sz);
             ofs.close();
+
+            Diagnostics(true, "httpserver::route:NEW_FILE file written").throwLocalDiag();
 
             Sqlite sql;
             DbStructure row;
@@ -192,7 +201,11 @@ void HttpServer::process()
             row.setValue(DB_FIELDS::FILENAME, fileNameWOExt);
             Diagnostics diagRes = sql.insertRow(&row);
 
+            Diagnostics(true, "httpserver::route:NEW_FILE row inserted to DB").throwLocalDiag();
+
             lock.reset();        //release lock
+
+            Diagnostics(true, "httpserver::route:NEW_FILE lock released").throwLocalDiag();
 
             if (!diagRes.status){
                 fs::remove(filePath);
@@ -200,6 +213,8 @@ void HttpServer::process()
                 Diagnostics(false, t).throwLocalDiag();
                 return QHttpServerResponse(t, QHttpServerResponse::StatusCode::InternalServerError);
             };
+
+            Diagnostics(true, "httpserver::route:NEW_FILE getting new id...").throwLocalDiag();
 
             DataRowsSet drs = sql.getRowsByOneParameter(DB_FIELDS::FILENAME, fileNameWOExt);
 
@@ -212,6 +227,7 @@ void HttpServer::process()
 
             int idLoc = drs[0].value(DB_FIELDS::ID).intValue;
 
+            Diagnostics(true, "httpserver::route:NEW_FILE new id is " + QString::number(idLoc)).throwLocalDiag();
 
             return QHttpServerResponse(QJsonDocument(QJsonObject{{DB_FIELDS::ID,idLoc},{DB_FIELDS::FILENAME,fileNameWOExt}}).toJson(),QHttpServerResponse::StatusCode::Ok);
         });

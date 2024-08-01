@@ -9,7 +9,6 @@ extern QString *dataFolder;
 //========================= Sqlite
 Sqlite::Sqlite()
 {
-
     dbName_ = SqliteSupport().generateObjectThreadDbName();
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", dbName_);
     db.setDatabaseName((*dataFolder) + "\\CommonDb.sqlite");
@@ -38,6 +37,7 @@ Diagnostics Sqlite::init()
 
 void Sqlite::checkDbStructure()
 {
+
     QVector<QString> qVecRet;
 
     QSqlDatabase conn = QSqlDatabase::database(dbName_);
@@ -45,7 +45,10 @@ void Sqlite::checkDbStructure()
     QString st = "PRAGMA table_info(" + TABLE_NAME + ")";
 
     QString nativeError;
+
+    USqlLockGuard lg = std::make_unique<LockGuard>(*mSqlMutex);
     bool queryStatus = query.exec(st);
+    lg.reset();
 
     if (!queryStatus)
     {
@@ -97,7 +100,11 @@ Diagnostics Sqlite::execStatement(QString inStatement)
     SqliteSupport::SQLITE_DATATYPES dataType;
     SqliteSupport support;
 
-    if (query.exec(inStatement))
+    USqlLockGuard lg = std::make_unique<LockGuard>(*mSqlMutex);
+    bool qResult = query.exec(inStatement);
+    lg.reset();
+
+    if (qResult)
     {
         QSqlRecord rec = query.record();
         while (query.next())
@@ -197,7 +204,10 @@ Diagnostics Sqlite::create()
     // DDL query
     QString str = getCreateStatement();
 
+    USqlLockGuard lg = std::make_unique<LockGuard>(*mSqlMutex);
     bool b = a_query.exec(str);
+    lg.reset();
+
     if (!b)
     {
         SqliteSupport support;
@@ -222,7 +232,11 @@ Diagnostics Sqlite::create()
         stAddColumnsFull += it.key() + " ";
         stAddColumnsFull += SqliteSupport::dataType(it->dataType) + ";";
 
-        if (a_query.exec(stAddColumnsFull))
+        USqlLockGuard lg = std::make_unique<LockGuard>(*mSqlMutex);
+        bool qResult = a_query.exec(stAddColumnsFull);
+        lg.reset();
+
+        if (qResult)
         {
             QString descriptionLoc = "Sqlite::create: new column created: ";
             descriptionLoc += it.key();
@@ -255,7 +269,10 @@ Diagnostics Sqlite::clear()
     QSqlQuery a_query(conn);
     // DDL query
 
+    USqlLockGuard lg = std::make_unique<LockGuard>(*mSqlMutex);
     bool b = a_query.exec("DELETE FROM " + TABLE_NAME);
+    lg.reset();
+
     if (!b)
     {
 
@@ -278,7 +295,10 @@ Diagnostics Sqlite::drop()
     QSqlQuery a_query(conn);
     // DDL query
 
+    USqlLockGuard lg = std::make_unique<LockGuard>(*mSqlMutex);
     bool b = a_query.exec("DROP TABLE " + TABLE_NAME);
+    lg.reset();
+
     if (!b)
     {
 
@@ -374,7 +394,11 @@ Diagnostics Sqlite::insertRow(DbStructure *valuesIn)
             }
         }
 
-        if(!query.exec())
+        USqlLockGuard lg = std::make_unique<LockGuard>(*mSqlMutex);
+        bool qResult = query.exec();
+        lg.reset();
+
+        if(!qResult)
         {
             QString descriptionLoc = "Sqlite::insertRow: unable to execute (";
             descriptionLoc += support.buildDiagString(&conn, &query);
@@ -398,7 +422,10 @@ Diagnostics Sqlite::removeRowById(int idIn)
     QSqlQuery a_query(conn);
     // DDL query
 
+    USqlLockGuard lg = std::make_unique<LockGuard>(*mSqlMutex);
     bool b = a_query.exec("DELETE FROM " + TABLE_NAME + " WHERE id = " + QString::number(idIn));
+    lg.reset();
+
     if (!b)
     {
         QString descriptionLoc = "Sqlite::removeRowById: unable to execute (";
@@ -423,7 +450,11 @@ DataRowsSet Sqlite::getRowsByDate(unsigned long long startDateIn, unsigned long 
     st+= " AND ";
     st+= "dateTimeStamp <= " + QString::number(endDateIn);
 
-    if (!query.exec(st))
+    USqlLockGuard lg = std::make_unique<LockGuard>(*mSqlMutex);
+    bool qResult = query.exec(st);
+    lg.reset();
+
+    if (!qResult)
     {
 
         QString descriptionLoc = "Sqlite::getRowsByDate: unable to execute " + st + " (";
@@ -452,7 +483,11 @@ DataRowsSet Sqlite::getRowsByStatement(QString *inStatement)
 
     QString st = (*inStatement);
 
-    if (!query.exec(st))
+    USqlLockGuard lg = std::make_unique<LockGuard>(*mSqlMutex);
+    bool qResult = query.exec(st);
+    lg.reset();
+
+    if (!qResult)
     {
 
         QString descriptionLoc = "Sqlite::getRowsByStatement: unable to execute " + st + " (";

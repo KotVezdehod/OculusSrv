@@ -11,12 +11,11 @@
 
 extern TaskWatcher *gTaskWatcher;
 extern QVector<Task*> *gTasks;
-extern std::mutex *gTasksListMutex;
 extern QString *dataFolder;
 extern unsigned long long startTime;
 extern unsigned long long stopTime;
 extern int threads;
-extern std::mutex *mMutex;
+//extern std::mutex *mMutex;
 namespace fs = std::filesystem;
 
 Searcher::Searcher(QObject *parent)
@@ -54,9 +53,9 @@ void Searcher::search()
 
         DateTime dtCurrent;
         DateTime dtFromDB(it->value(DB_FIELDS::DATETIMESTAMP).intValue);
-        unsigned long long difference = dtCurrent - dtFromDB;
+        unsigned long long difference = dtCurrent.currentDateTime - dtFromDB.currentDateTime;
 
-        if (difference > 1000000)     //2 дней
+        if (difference > 1000000)     //1 дней
         {
             sql.removeRowById(it->value(DB_FIELDS::ID).intValue);
 
@@ -151,7 +150,7 @@ void Searcher::search()
             fs::path logPath(dataFolder->toStdString());
             logPath.append("log.txt");
             std::ofstream ofs;
-            std::lock_guard<std::mutex> mute(*mMutex);
+            //std::lock_guard<std::mutex> mute(*mMutex);
 
             ofs.open(logPath,std::ios::app);
             if (ofs.is_open()){

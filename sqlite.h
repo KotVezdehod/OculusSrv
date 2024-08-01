@@ -5,6 +5,9 @@
 #include <QtSql>
 #include <QString>
 
+static std::mutex *mSqlMutex = new std::mutex();
+using LockGuard = std::lock_guard<std::mutex>;
+using USqlLockGuard = std::unique_ptr<LockGuard>;
 
 namespace DB_FIELDS
 {
@@ -259,7 +262,11 @@ public:
 
         SqliteSupport support;
 
-        if (!query.exec(st))
+        USqlLockGuard lg = std::make_unique<LockGuard>(*mSqlMutex);
+        bool qResult = query.exec(st);
+        lg.reset();
+
+        if (!qResult)
         {
             QString descriptionLoc = "Sqlite::getRowsByOneParameter: unable to execute " + st + " (";
             descriptionLoc += support.buildDiagString(&conn, &query);
